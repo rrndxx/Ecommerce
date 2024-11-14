@@ -21,7 +21,14 @@ $users = $newConnection->getUsers();
     <style>
         body {
             font-family: "Sour Gummy";
+            background-image: url('../assets/background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .sidebar {
@@ -30,13 +37,17 @@ $users = $newConnection->getUsers();
             left: 0;
             bottom: 0;
             width: 250px;
-            background-color: rgba(168, 118, 118, 0.9);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(2px);
             color: white;
             padding-top: 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            border-right: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
+
 
         .sidebar a {
             color: white;
@@ -55,7 +66,6 @@ $users = $newConnection->getUsers();
 
         .sidebar .active {
             background-color: #E1ACAC;
-            font-weight: bold;
         }
 
         .sidebar-footer {
@@ -75,11 +85,7 @@ $users = $newConnection->getUsers();
         .content {
             margin-left: 250px;
             padding: 20px;
-            background-color: #FFD0D0;
-            background-image: url('../assets/background.jpg');
-            background-size: cover;
-            background-position: center;
-            height: auto;
+            flex: 1;
         }
 
         @media (max-width: 768px) {
@@ -211,7 +217,6 @@ $users = $newConnection->getUsers();
                         <input type="text" id="searchInput" class="search-input" placeholder="Search Products...">
                     </div>
                 </div>
-                <hr>
                 <div class="scrollable-table">
                     <table class="table table-hover">
                         <thead>
@@ -274,8 +279,8 @@ $users = $newConnection->getUsers();
                                     <td><?= $user->username ?></td>
                                     <td><?= $user->date_joined ?></td>
                                 </tr>
+                            <?php endforeach; ?>
                         </tbody>
-                    <?php endforeach; ?>
                     </table>
                 </div>
             </div>
@@ -330,7 +335,7 @@ $users = $newConnection->getUsers();
             rows.forEach(row => {
                 const productName = row.cells[1].textContent.toLowerCase();
                 if (productName.includes(searchQuery)) {
-                    row.style.display = ''; 
+                    row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }

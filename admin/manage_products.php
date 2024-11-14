@@ -21,9 +21,15 @@ $newConnection->addProduct();
     <link href="https://fonts.googleapis.com/css2?family=Sour+Gummy:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: "Sour Gummy", sans-serif;
+            font-family: "Sour Gummy";
+            background-image: url('../assets/background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             color: white;
-            background-color: #FFD0D0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .sidebar {
@@ -32,13 +38,17 @@ $newConnection->addProduct();
             left: 0;
             bottom: 0;
             width: 250px;
-            background-color: rgba(168, 118, 118, 0.9);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(2px);
             color: white;
             padding-top: 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            border-right: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
+
 
         .sidebar a {
             color: white;
@@ -57,7 +67,6 @@ $newConnection->addProduct();
 
         .sidebar .active {
             background-color: #E1ACAC;
-            font-weight: bold;
         }
 
         .sidebar-footer {
@@ -74,14 +83,11 @@ $newConnection->addProduct();
             margin-bottom: 10px;
         }
 
+
         .content {
-            position: relative;
             margin-left: 250px;
             padding: 20px;
-            height: 100vh;
-            background-image: url('../assets/background.jpg');
-            background-size: cover;
-            background-position: center;
+            flex: 1;
         }
 
         .cards-container {
@@ -189,7 +195,6 @@ $newConnection->addProduct();
         <div class="container">
             <div class="d-flex justify-content-between">
                 <h1>Manage Products</h1>
-                <button class="btn btn-danger" onclick="confirmLogout()">Logout</button>
             </div>
             <hr>
 

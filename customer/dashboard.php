@@ -4,6 +4,49 @@ include_once("../includes/connection.php");
 
 $newConnection = new Connection();
 $products = $newConnection->getProducts();
+
+// Initialize cart if it's not already set
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+    $_SESSION['cart_total'] = 0;
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
+    $product_id = $_POST['product_id'];
+    $quantity = $_POST['quantity'];
+
+    // Get product details
+    $product = $newConnection->getProductById($product_id);
+
+    // Check if the product is already in the cart
+    $found = false;
+    foreach ($_SESSION['cart'] as &$cart_item) {
+        if ($cart_item['product_id'] == $product_id) {
+            $cart_item['quantity'] += $quantity;
+            $found = true;
+            break;
+        }
+    }
+
+    // If not found, add the product to the cart
+    if (!$found) {
+        $_SESSION['cart'][] = [
+            'product_id' => $product_id,
+            'product_name' => $product->product_name,
+            'price' => $product->price,
+            'quantity' => $quantity
+        ];
+    }
+
+    // Recalculate the cart total
+    $_SESSION['cart_total'] = 0;
+    foreach ($_SESSION['cart'] as $item) {
+        $_SESSION['cart_total'] += $item['price'] * $item['quantity'];
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF']); // Redirect to avoid form resubmission
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -21,7 +64,18 @@ $products = $newConnection->getProducts();
     <style>
         body {
             font-family: "Sour Gummy";
+            background-image: url('../assets/background.jpg');
+            background-size: cover;
+            /* Ensures the image covers the full screen */
+            background-position: center;
+            /* Centers the image */
+            background-attachment: fixed;
+            /* Keeps the background fixed when scrolling */
             color: white;
+            min-height: 100vh;
+            /* Ensure full viewport height */
+            display: flex;
+            flex-direction: column;
         }
 
         .sidebar {
@@ -30,16 +84,22 @@ $products = $newConnection->getProducts();
             left: 0;
             bottom: 0;
             width: 250px;
-            background-color: rgba(168, 118, 118, 0.9);
+            background: rgba(255, 255, 255, 0.3);
+            /* Slight transparent background */
+            backdrop-filter: blur(2px);
+            /* Applies blur effect to the sidebar */
             color: white;
             padding-top: 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            border-right: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
+
         .sidebar a {
-            color: white;
+            color: #E1ACAC;
             text-decoration: none;
             padding: 10px 15px;
             display: block;
@@ -50,11 +110,11 @@ $products = $newConnection->getProducts();
         }
 
         .sidebar a:hover {
-            background-color: #E1ACAC;
+            background-color: rgba(255, 255, 255, 0.5);
         }
 
         .sidebar .active {
-            background-color: #E1ACAC;
+            background-color: rgba(255, 255, 255, 0.7);
             font-weight: bold;
         }
 
@@ -75,11 +135,7 @@ $products = $newConnection->getProducts();
         .content {
             margin-left: 250px;
             padding: 20px;
-            background-color: #FFD0D0;
-            background-image: url('../assets/background.jpg');
-            background-size: cover;
-            background-position: center;
-            height: auto;
+            flex: 1;
         }
 
         @media (max-width: 768px) {
@@ -95,49 +151,41 @@ $products = $newConnection->getProducts();
             }
         }
 
+
         .highlight {
             background-color: #E1ACAC !important;
             transition: background-color 0.3s ease;
         }
 
-        .table thead {
-            background-color: rgba(168, 118, 118, 0.9);
-            color: white;
-        }
-
-        table thead th {
-            position: sticky;
-            top: 0;
-            background-color: rgba(168, 118, 118, 0.9);
-            z-index: 1;
-        }
-
-        .table th,
-        .table td {
-            vertical-align: middle;
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: #E1ACAC;
-        }
-
-        .btn:hover {
-            opacity: 0.8;
-        }
-
-        .table-container {
-            margin-bottom: 30px;
-            background-color: white;
+        .card {
             border-radius: 10px;
-            padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
-        .section-title {
-            font-size: 1.8rem;
-            margin-bottom: 15px;
-            color: black;
+        .card-body {
+            padding: 15px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .card-text {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        .product-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .cart-card {
+            height: 100vh;
+            overflow-y: auto;
         }
 
         .filter-section {
@@ -169,15 +217,40 @@ $products = $newConnection->getProducts();
             background-color: #d79999;
         }
 
-        .scrollable-table {
-            max-height: 300px;
-            overflow-y: auto;
-            display: block;
+        .modal-content {
+            background-color: #E1ACAC;
+            color: white;
+            border-radius: 10px;
         }
 
-        /* Add min-height to tables */
-        .table {
-            min-height: 300px;
+        .modal-header {
+            background-color: #E1ACAC;
+            border-bottom: 1px solid #E1ACAC;
+            color: white;
+        }
+
+        .modal-footer {
+            background-color: #E1ACAC;
+            border-top: 1px solid #E1ACAC;
+            color: white;
+        }
+
+        .modal-body img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            max-height: 200px;
+        }
+
+        .modal-dialog {
+            max-width: 500px;
+            margin: 1.75rem auto;
+        }
+
+        .btn-primary {
+            background-color: #d79999;
+            border-color: #d79999;
+            color: white;
         }
     </style>
 </head>
@@ -188,7 +261,6 @@ $products = $newConnection->getProducts();
         <h4 class="text-center text-white mb-2 mt-2">Roxanne's Shop</h4>
         <hr>
         <a href="" class="active"><i class="bi bi-house-door"></i> Dashboard</a>
-        <a href="manage_products.php"><i class="bi bi-box"></i> Manage Products</a>
         <div class="sidebar-footer">
             <hr><button class="btn btn-danger w-100" onclick="confirmLogout()">Logout</button>
         </div>
@@ -197,140 +269,161 @@ $products = $newConnection->getProducts();
     <!-- Main Content -->
     <div class="content">
         <div class="container">
-            <div class="wew d-flex justify-content-between">
-                <h1>Welcome, <?php echo  $_SESSION['user']?></h1>
+            <div class="d-flex justify-content-center">
+                <h1>Welcome, <?php echo  $_SESSION['user'] . "!" ?></h1>
             </div>
             <hr>
+            <div class="col-md-12">
+                <!-- Products Cards -->
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="section-title">Products List</h4>
+                        <div class="filter-section">
+                            <button class="filter-btn">Filter By Category</button>
+                            <input type="text" id="searchInput" class="search-input" placeholder="Search Products...">
+                        </div>
+                    </div>
+                    <hr>
+                </div>
+            </div>
 
-            <!-- Products Table -->
-            <div class="table-container">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="section-title">Products List</h4>
-                    <div class="filter-section">
-                        <button class="filter-btn">Filter By Category</button>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Search Products...">
+            <!-- Products and Cart -->
+            <div class="row">
+                <!-- Products Section (Two Columns) -->
+                <div class="col-md-8">
+                    <div class="product-cards">
+                        <?php foreach ($products as $product): ?>
+                            <div class="card product-row">
+                                <img src="../assets/sample.avif" alt="<?= $product->product_name ?>">
+                                <div class="card-body">
+                                    <h5 class="card-title"><?= $product->product_name ?></h5>
+                                    <p class="card-text">
+                                        Category: <?= $product->category_name ?><br>
+                                        Price: ₱<?= $product->price ?><br>
+                                        Stock: <b style="color: <?php if ($product->stock > 70) {
+                                                                    echo 'green';
+                                                                } else if ($product->stock > 30) {
+                                                                    echo 'orange';
+                                                                } else {
+                                                                    echo 'red';
+                                                                } ?>"><?= $product->stock ?></b><br>
+                                    </p>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cartModal" data-product-id="<?= $product->product_id ?>" data-product-name="<?= $product->product_name ?>" data-product-price="<?= $product->price ?>"><i class="bi bi-cart"></i>
+                                            Add to Cart</button>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
-                <hr>
-                <div class="scrollable-table">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr class="text-center">
-                                <th scope="col">ID</th>
-                                <th scope="col">Product Name</th>
-                                <th scope="col">Category</th>
-                                <th scope="col">Price</th>
-                                <th scope="col">Stock</th>
-                                <th scope="col">Date Created</th>
-                                <th scope="col">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-center" id="productTableBody">
-                            <?php foreach ($products as $product): ?>
-                                <tr class="product-row">
-                                    <th scope="row"><?= $product->id ?></th>
-                                    <td><?= $product->product_name ?></td>
-                                    <td><?= $product->category_name ?></td>
-                                    <td>₱<?= $product->price ?></td>
-                                    <td><?= $product->stock ?></td>
-                                    <td><?= $product->date_created ?></td>
-                                    <td>
-                                        <button class="btn btn-primary mx-2"><i class="bi bi-pencil"></i> Edit</button>
-                                        <button class="btn btn-danger mx-2"><i class="bi bi-trash"></i> Delete</button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+
+                <!-- Cart Section (One Column) -->
+                <div class="col-md-4">
+                    <div class="card cart-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Your Cart</h5>
+                            <hr>
+                            <?php if (!empty($_SESSION['cart'])): ?>
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Product Name</th>
+                                            <th>Price</th>
+                                            <th>Quantity</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($_SESSION['cart'] as $item): ?>
+                                            <tr>
+                                                <td><?= $item['product_name'] ?></td>
+                                                <td>₱<?= $item['price'] ?></td>
+                                                <td><?= $item['quantity'] ?></td>
+                                                <td>₱<?= $item['price'] * $item['quantity'] ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <strong>Total:</strong>
+                                    <strong>₱<?= $_SESSION['cart_total'] ?></strong>
+                                </div>
+                                <hr>
+                                <button class="btn btn-success w-100">Proceed to Checkout</button>
+                            <?php else: ?>
+                                <p>Your cart is empty.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Users Table -->
-            <div class="table-container">
-                <h4 class="section-title">Users List</h4>
-                <div class="scrollable-table">
-                    <table class="table  table-hover">
-                        <thead>
-                            <tr class="text-center">
-                                <th scope="col">ID</th>
-                                <th scope="col">First Name</th>
-                                <th scope="col">Last Name</th>
-                                <th scope="col">Address</th>
-                                <th scope="col">Birthdate</th>
-                                <th scope="col">Gender</th>
-                                <th scope="col">Username</th>
-                                <th scope="col">Date Joined</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-center">
-                            <?php foreach ($users as $user): ?>
-                                <tr>
-                                    <th scope="row"><?= $user->user_id ?></th>
-                                    <td><?= $user->first_name ?></td>
-                                    <td><?= $user->last_name ?></td>
-                                    <td><?= $user->address ?></td>
-                                    <td><?= $user->birthdate ?></td>
-                                    <td><?= $user->gender ?></td>
-                                    <td><?= $user->username ?></td>
-                                    <td><?= $user->date_joined ?></td>
-                                </tr>
-                        </tbody>
-                    <?php endforeach; ?>
-                    </table>
+
+            <!-- Modal -->
+            <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="cartModalLabel">Add to Cart</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="POST">
+                                <input type="hidden" name="product_id" id="modal-product-id">
+                                <div class="mb-3">
+                                    <img src="../assets/sample.avif">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="modal-product-name" class="form-label">Product Name</label>
+                                    <input type="text" class="form-control" id="modal-product-name" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="modal-product-price" class="form-label">Price</label>
+                                    <input type="text" class="form-control" id="modal-product-price" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="modal-quantity" class="form-label">Quantity</label>
+                                    <input type="number" name="quantity" id="modal-quantity" class="form-control" min="1" required>
+                                </div>
+                                <button type="submit" name="add_to_cart" class="btn btn-primary w-100">Add to Cart</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Orders Table -->
-            <div class="table-container">
-                <h4 class="section-title">Orders List</h4>
-                <div class="scrollable-table">
-                    <table class="table table-striped table-hover">
-                        <thead>
-                            <tr class="text-center">
-                                <th scope="col">ID</th>
-                                <th scope="col">Order Date</th>
-                                <th scope="col">Customer</th>
-                                <th scope="col">Total</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-center">
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>2024-11-10</td>
-                                <td>John Doe</td>
-                                <td>$150.00</td>
-                                <td>Pending</td>
-                                <td>
-                                    <button class="btn btn-primary mx-2"><i class="bi bi-pencil"></i> Edit</button>
-                                    <button class="btn btn-danger mx-2"><i class="bi bi-trash"></i> Delete</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
     <script>
         function confirmLogout() {
             if (confirm("Are you sure you want to log out?")) {
                 window.location.href = '../logout.php';
             }
         }
+        const cartModal = document.getElementById('cartModal');
+        cartModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const productId = button.getAttribute('data-product-id');
+            const productName = button.getAttribute('data-product-name');
+            const productPrice = button.getAttribute('data-product-price');
 
+            // Set modal values
+            document.getElementById('modal-product-id').value = productId;
+            document.getElementById('modal-product-name').value = productName;
+            document.getElementById('modal-product-price').value = '₱' + productPrice;
+        });
         document.getElementById('searchInput').addEventListener('input', function() {
             const searchQuery = this.value.toLowerCase();
-            const rows = document.querySelectorAll('.product-row');
+            const productRows = document.querySelectorAll('.product-row');
 
-            rows.forEach(row => {
-                const productName = row.cells[1].textContent.toLowerCase();
+            productRows.forEach(row => {
+                const productName = row.querySelector('.card-title').textContent.toLowerCase();
                 if (productName.includes(searchQuery)) {
-                    row.style.display = ''; 
+                    row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }

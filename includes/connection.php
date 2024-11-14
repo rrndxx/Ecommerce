@@ -19,6 +19,34 @@ class Connection
         }
     }
 
+    public function beginTransaction()
+    {
+        $this->openConnection()->beginTransaction();
+    }
+
+    public function commit()
+    {
+        $this->openConnection()->commit();
+    }
+
+    public function rollBack()
+    {
+        $this->openConnection()->rollBack();
+    }
+
+    public function getUsers()
+    {
+        try {
+            $connection = $this->openConnection();
+            $statement = $connection->prepare('SELECT * FROM users');
+            $statement->execute();
+            return $statement->fetchAll();
+        } catch (PDOException $th) {
+            echo '' . $th->getMessage();
+            return [];
+        }
+    }
+
     public function registerUser()
     {
         if (isset($_POST['register'])) {
@@ -37,27 +65,6 @@ class Connection
 
             header('Location: login.php');
             exit();
-        }
-    }
-
-    public function addProduct()
-    {
-        if (isset($_POST['addProduct'])) {
-            try {
-                $product_name = $_POST['productName'];
-                $category_id = $_POST['productCategory'];
-                $price = $_POST['productPrice'];
-                $stock = $_POST['productStock'];
-
-                $connection = $this->openConnection();
-                $insert = $connection->prepare('INSERT INTO products (product_name, category_id, price, stock) VALUES (?, ?, ?, ?)');
-                $insert->execute([$product_name, $category_id, $price, $stock]);
-
-                header('Location: manage_products.php');
-                exit();
-            } catch (PDOException $th) {
-                echo '' . $th->getMessage();
-            }
         }
     }
 
@@ -88,6 +95,36 @@ class Connection
         }
     }
 
+    public function getProductById($productId)
+    {
+        $query = "SELECT * FROM products WHERE id = ?";
+        $stmt = $this->openConnection()->prepare($query);
+        $stmt->bindParam(1, $productId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_OBJ);
+    }
+
+    public function addProduct()
+    {
+        if (isset($_POST['addProduct'])) {
+            try {
+                $product_name = $_POST['productName'];
+                $category_id = $_POST['productCategory'];
+                $price = $_POST['productPrice'];
+                $stock = $_POST['productStock'];
+
+                $connection = $this->openConnection();
+                $insert = $connection->prepare('INSERT INTO products (product_name, category_id, price, stock) VALUES (?, ?, ?, ?)');
+                $insert->execute([$product_name, $category_id, $price, $stock]);
+
+                header('Location: manage_products.php');
+                exit();
+            } catch (PDOException $th) {
+                echo '' . $th->getMessage();
+            }
+        }
+    }
 
     public function addCategory()
     {
@@ -132,16 +169,25 @@ class Connection
         }
     }
 
-    public function getUsers()
+    public function processCheckout($orderData, $cartItems)
     {
         try {
-            $connection = $this->openConnection();
-            $statement = $connection->prepare('SELECT * FROM users');
-            $statement->execute();
-            return $statement->fetchAll();
-        } catch (PDOException $th) {
-            echo '' . $th->getMessage();
-            return [];
+            $this->beginTransaction();
+
+            $stmt = $this->openConnection()->prepare("INSERT INTO orders (user_id, total_amount) VALUES (?, ?)");
+            $stmt->execute([$orderData['user_id'], $orderData['total_amount']]);
+
+            $orderId = $this->openConnection()->lastInsertId();
+
+            foreach ($cartItems as $item) {
+                $stmt = $this->openConnection()->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$orderId, $item['product_id'], $item['quantity'], $item['price']]);
+            }
+
+            $this->commit();
+        } catch (Exception $e) {
+            $this->rollBack();
+            echo "Error during checkout: " . $e->getMessage();
         }
     }
 }
