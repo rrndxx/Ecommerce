@@ -192,7 +192,7 @@ $newConnection = $newConnection->registerUser();
             </div>
             <hr>
             <div class="register-link text-center">
-                <p>Already have an account? <a href="register.php"> Login</a></p>
+                <p>Already have an account? <a href="login.php"> Login</a></p>
             </div>
         </form>
     </div>
