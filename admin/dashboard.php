@@ -4,6 +4,7 @@ include_once("../includes/connection.php");
 $newConnection = new Connection();
 $products = $newConnection->getProducts();
 $users = $newConnection->getUsers();
+$newConnection->deleteProduct();
 ?>
 
 <!DOCTYPE html>
@@ -240,8 +241,10 @@ $users = $newConnection->getUsers();
                                     <td><?= $product->stock ?></td>
                                     <td><?= $product->date_created ?></td>
                                     <td>
-                                        <button class="btn btn-primary mx-2"><i class="bi bi-pencil"></i> Edit</button>
-                                        <button class="btn btn-danger mx-2"><i class="bi bi-trash"></i> Delete</button>
+                                        <form action="" method="POST">
+                                            <button class="btn btn-primary mx-2"><i class="bi bi-pencil"></i> Edit</button>
+                                            <button type="submit" class="btn btn-danger mx-2" name="deleteProduct" value="<?php echo $product->id ?>"><i class="bi bi-trash"  ></i> Delete</button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

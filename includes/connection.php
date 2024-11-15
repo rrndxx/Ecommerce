@@ -19,21 +19,6 @@ class Connection
         }
     }
 
-    public function beginTransaction()
-    {
-        $this->openConnection()->beginTransaction();
-    }
-
-    public function commit()
-    {
-        $this->openConnection()->commit();
-    }
-
-    public function rollBack()
-    {
-        $this->openConnection()->rollBack();
-    }
-
     public function getUsers()
     {
         try {
@@ -126,6 +111,22 @@ class Connection
         }
     }
 
+    public function deleteProduct()
+    {
+        if (isset($_POST['deleteProduct'])) {
+            $productToDelete = $_POST['deleteProduct'];
+            try {
+                $connection = $this->openConnection();
+                $delete = $connection->prepare('DELETE FROM products WHERE id = ?');
+                $delete->execute([$productToDelete]);   
+                header('Location: dashboard.php');
+                exit();
+            } catch (PDOException $th) {
+                echo '' . $th->getMessage();
+            }
+        }
+    }
+
     public function addCategory()
     {
         if (isset($_POST['addCategory'])) {
@@ -166,28 +167,6 @@ class Connection
         } catch (PDOException $th) {
             echo '' . $th->getMessage();
             return [];
-        }
-    }
-
-    public function processCheckout($orderData, $cartItems)
-    {
-        try {
-            $this->beginTransaction();
-
-            $stmt = $this->openConnection()->prepare("INSERT INTO orders (user_id, total_amount) VALUES (?, ?)");
-            $stmt->execute([$orderData['user_id'], $orderData['total_amount']]);
-
-            $orderId = $this->openConnection()->lastInsertId();
-
-            foreach ($cartItems as $item) {
-                $stmt = $this->openConnection()->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$orderId, $item['product_id'], $item['quantity'], $item['price']]);
-            }
-
-            $this->commit();
-        } catch (Exception $e) {
-            $this->rollBack();
-            echo "Error during checkout: " . $e->getMessage();
         }
     }
 }
