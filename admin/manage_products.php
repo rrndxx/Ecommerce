@@ -232,7 +232,7 @@ $newConnection->addProduct();
                         <div class="mb-3">
                             <label for="productCategory" class="form-label">Category</label>
                             <select class="form-control" id="productCategory" name="productCategory" required>
-                                <option value="" selected disabled>Select Category</option>
+                                <option value=""selected disabled>Select Category</option>
                                 <?php foreach ($categories as $category): ?>
                                     <option value="<?= $category->category_id ?>"><?= $category->category_name ?></option>
                                 <?php endforeach; ?>

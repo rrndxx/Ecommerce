@@ -242,8 +242,8 @@ $newConnection->deleteProduct();
                                     <td><?= $product->date_created ?></td>
                                     <td>
                                         <form action="" method="POST">
-                                            <button class="btn btn-primary mx-2"><i class="bi bi-pencil"></i> Edit</button>
-                                            <button type="submit" class="btn btn-danger mx-2" name="deleteProduct" value="<?php echo $product->id ?>"><i class="bi bi-trash"  ></i> Delete</button>
+                                            <button class="btn btn-primary mx-2" data-bs-toggle="modal" data-bs-target="#editProductModal<?= $product->id ?>"><i class="bi bi-pencil"></i> Edit</button>
+                                            <button type="submit" class="btn btn-danger mx-2" name="deleteProduct" value="<?php echo $product->id ?>" onclick="return confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -329,6 +329,10 @@ $newConnection->deleteProduct();
             if (confirm("Are you sure you want to log out?")) {
                 window.location.href = '../logout.php';
             }
+        }
+
+        function confirmDelete() {
+            return confirm("Are you sure you want to delete this product?");
         }
 
         document.getElementById('searchInput').addEventListener('input', function() {
